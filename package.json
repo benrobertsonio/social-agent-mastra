@@ -1,0 +1,25 @@
+{
+  "name": "social-agent-mastra",
+  "version": "1.0.0",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "dev": "mastra dev"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "description": "",
+  "dependencies": {
+    "@mastra/core": "^0.1.27-alpha.63",
+    "@mastra/rag": "^0.0.2-alpha.45",
+    "node-fetch": "^3.3.2",
+    "zod": "^3.24.1"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.7",
+    "mastra": "^0.1.57-alpha.93",
+    "tsx": "^4.19.2",
+    "typescript": "^5.7.3"
+  }
+}
