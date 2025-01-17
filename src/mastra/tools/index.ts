@@ -4,12 +4,20 @@ import { MDocument, PgVector, createVectorQueryTool, embed } from "@mastra/rag";
 import fetch from "node-fetch";
 import { z } from "zod";
 
+const pgVector = new PgVector(process.env.POSTGRES_CONNECTION_STRING!);
+
 export const indexContentTool = createTool({
   id: "index-content",
   description: "Index content from a URL",
   inputSchema: z.object({
     url: z.string().describe("URL to index"),
-    metadata: z.record(z.string(), z.any()).describe("Metadata to index"),
+    metadata: z
+      .object({
+        title: z.string().describe("Title of the page"),
+        description: z.string().describe("Description of the page"),
+        // Add other metadata fields as needed
+      })
+      .describe("Metadata to index"),
   }),
   execute: async ({ context }) => {
     console.log("Indexing content for URL:", context.url);
@@ -67,8 +75,8 @@ const indexContent = async (
     console.log("Valid chunks after filtering:", validChunks.length);
 
     // convert chunks to text
-    const textChunks = validChunks.map((chunk) => chunk.toString());
-    console.log("Text chunks:", textChunks);
+    const textChunks = validChunks.map((chunk) => chunk.text);
+    // console.log("Text chunks:", textChunks);
 
     // Generate embeddings for the chunks
     const { embeddings } = (await embed(textChunks, {
@@ -88,21 +96,58 @@ const indexContent = async (
       },
     }));
 
-    // Store in vector database
-    const vectorStore = mastra.getVector("pgVector");
-
     // Create index if it doesn't exist (1536 is OpenAI's embedding dimension)
-    await vectorStore.createIndex("content_embeddings", 1536).catch((e) => {
+    await pgVector.createIndex("content_embeddings", 1536).catch((e) => {
       // Index might already exist, that's fine
       console.error("Error creating index:", e);
     });
 
-    // Store embeddings with metadata
-    await vectorStore.upsert(
-      "content_embeddings",
-      embeddings,
-      chunksWithMetadata
-    );
+    console.log("Upserting embeddings with metadata");
+    try {
+      // Debug logs
+      console.log("=== DEBUG UPSERT ===");
+      console.log("Embeddings format:", {
+        length: embeddings.length,
+        sampleDimensions: embeddings[0]?.length,
+        sampleFirst: embeddings[0]?.slice(0, 5),
+      });
+      console.log("Metadata format:", {
+        length: chunksWithMetadata.length,
+        sample: chunksWithMetadata[0],
+      });
+
+      const result = await pgVector.upsert(
+        "content_embeddings",
+        embeddings,
+        chunksWithMetadata
+      );
+      console.log("=== POST UPSERT CHECK ===");
+      console.log("Upsert result:", result);
+
+      // Verify the data actually made it
+      const count = await pgVector.query(`
+        SELECT COUNT(*) FROM content_embeddings
+      `);
+      console.log("Row count:", count);
+
+      // Check a sample row
+      const sample = await pgVector.query(`
+        SELECT id, project_id, url, chunk_index 
+        FROM content_embeddings 
+        LIMIT 1
+      `);
+      console.log("Sample row:", sample);
+
+      // try {
+      //   const count = await pgVector.count("content_embeddings");
+      //   console.log(`Total embeddings in store: ${count}`);
+      // } catch (e) {
+      //   console.warn("Could not verify embedding count:", e);
+      // }
+    } catch (e) {
+      console.error("Error upserting embeddings:", e);
+      throw e; // rethrow to maintain error handling
+    }
 
     return {
       success: true,
@@ -114,8 +159,6 @@ const indexContent = async (
     throw error;
   }
 };
-
-const pgVector = new PgVector(process.env.POSTGRES_CONNECTION_STRING!);
 
 // Create vector query tool for searching
 const vectorQueryTool = createVectorQueryTool({
