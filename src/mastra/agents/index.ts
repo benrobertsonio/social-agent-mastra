@@ -1,22 +1,16 @@
-import { Agent } from '@mastra/core';
-import { weatherTool } from '../tools';
+import { Agent } from "@mastra/core";
+import { vectorQueryTool } from "../tools";
 
-export const weatherAgent = new Agent({
-  name: 'Weather Agent',
-  instructions: `
-      You are a helpful weather assistant that provides accurate weather information.
-
-      Your primary function is to help users get weather details for specific locations. When responding:
-      - Always ask for a location if none is provided
-      - Include relevant details like humidity, wind conditions, and precipitation
-      - Keep responses concise but informative
-
-      Use the weatherTool to fetch current weather data.
-`,
+// Create our RAG agent
+export const ragAgent = new Agent({
+  name: "Content RAG Agent",
+  instructions: `You are a helpful assistant that processes web content for social media marketing.
+  You are given a URL and you need to extract the content and return it in a structured format.
+  `,
   model: {
-    provider: 'OPEN_AI',
-    name: 'gpt-4o',
-    toolChoice: 'auto',
+    provider: "OPEN_AI",
+    name: "gpt-4o",
+    toolChoice: "auto",
   },
-  tools: { weatherTool },
+  tools: { vectorQueryTool } as any,
 });

@@ -1,173 +1,187 @@
-import { Step, Workflow } from '@mastra/core';
-import { z } from 'zod';
+import { EmbedManyResult, Step, Workflow, embed } from "@mastra/core";
 
-const fetchWeather = new Step({
-  id: 'fetch-weather',
-  description: 'Fetches weather forecast for a given city',
-  inputSchema: z.object({
-    city: z.string().describe('The city to get the weather for'),
+import { MDocument } from "@mastra/rag";
+import { z } from "zod";
+
+const contentPipeline = new Workflow({
+  name: "content",
+  triggerSchema: z.object({
+    url: z.string(),
+    metadata: z.record(z.any()),
   }),
+});
+
+const fetchContentStep = new Step({
+  id: "fetch-content",
   execute: async ({ context }) => {
-    const triggerData = context.machineContext?.getStepPayload<{ city: string }>('trigger');
+    const url = context.machineContext?.triggerData.url;
+    try {
+      // Validate URL
+      try {
+        new URL(url);
+      } catch (e) {
+        throw new Error(`Invalid URL: ${url}`);
+      }
 
-    if (!triggerData) {
-      throw new Error('Trigger data not found');
+      // Fetch HTML from URL
+      const response = await fetch(url, {
+        headers: {
+          "User-Agent":
+            "Mozilla/5.0 (compatible; SocialAgent/1.0; +http://example.com)",
+        },
+      });
+
+      if (!response.ok) {
+        throw new Error(
+          `Failed to fetch URL (${response.status}): ${response.statusText}`
+        );
+      }
+
+      const html = await response.text();
+      if (!html) {
+        throw new Error("Empty response from URL");
+      }
+
+      console.log(
+        `Successfully fetched HTML from ${url} (${html.length} bytes)`
+      );
+
+      return {
+        content: html,
+      };
+    } catch (e) {
+      console.error(e);
+      throw e;
     }
-
-    const geocodingUrl = `https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(triggerData.city)}&count=1`;
-    const geocodingResponse = await fetch(geocodingUrl);
-    const geocodingData = await geocodingResponse.json();
-
-    if (!geocodingData.results?.[0]) {
-      throw new Error(`Location '${triggerData.city}' not found`);
-    }
-
-    const { latitude, longitude, name } = geocodingData.results[0];
-
-    const weatherUrl = `https://api.open-meteo.com/v1/forecast?latitude=${latitude}&longitude=${longitude}&daily=temperature_2m_max,temperature_2m_min,precipitation_probability_mean,weathercode&timezone=auto`;
-    const response = await fetch(weatherUrl);
-    const data = await response.json();
-
-    const forecast = data.daily.time.map((date: string, index: number) => ({
-      date,
-      maxTemp: data.daily.temperature_2m_max[index],
-      minTemp: data.daily.temperature_2m_min[index],
-      precipitationChance: data.daily.precipitation_probability_mean[index],
-      condition: getWeatherCondition(data.daily.weathercode[index]),
-      location: name,
-    }));
-
-    return forecast;
   },
 });
 
-const forecastSchema = z.array(
-  z.object({
-    date: z.string(),
-    maxTemp: z.number(),
-    minTemp: z.number(),
-    precipitationChance: z.number(),
-    condition: z.string(),
-    location: z.string(),
-  }),
-);
-
-const planActivities = new Step({
-  id: 'plan-activities',
-  description: 'Suggests activities based on weather conditions',
-  inputSchema: forecastSchema,
+const embedStep = new Step({
+  id: "embed-content",
   execute: async ({ context, mastra }) => {
-    const forecast = context.machineContext?.getStepPayload<z.infer<typeof forecastSchema>>('fetch-weather');
-
-    if (!forecast) {
-      throw new Error('Forecast data not found');
+    if (
+      context.machineContext?.stepResults?.["fetch-content"]?.status !==
+      "success"
+    ) {
+      throw new Error("Fetch content step failed");
     }
 
-    const prompt = `Based on the following weather forecast for ${forecast[0].location}, suggest appropriate activities:
-      ${JSON.stringify(forecast, null, 2)}
-      `;
+    const metadata = context.machineContext?.triggerData.metadata || {};
 
-    if (!mastra?.llm) {
-      throw new Error('Mastra not found');
-    }
+    const html =
+      context.machineContext?.stepResults?.["fetch-content"]?.payload?.content;
 
-    const llm = mastra.llm({
-      provider: 'OPEN_AI',
-      name: 'gpt-4o',
+    // Create document from HTML
+    const doc = MDocument.fromHTML(html);
+
+    const chunks = await doc.chunk({
+      headers: [
+        ["h1", "Header 1"],
+        ["p", "Paragraph"],
+      ],
     });
 
-    const response = await llm.stream([
-      {
-        role: 'system',
-        content: `You are a local activities and travel expert who excels at weather-based planning. Analyze the weather data and provide practical activity recommendations.
+    // Filter out empty chunks
+    const validChunks = chunks.filter(
+      (chunk) => chunk.text && chunk.text.trim().length > 0
+    );
+    console.log("Valid chunks after filtering:", validChunks.length);
 
-        For each day in the forecast, structure your response exactly as follows:
+    // convert chunks to text
+    const textChunks = validChunks.map((chunk) => chunk.text);
+    // console.log("Text chunks:", textChunks);
 
-        📅 [Day, Month Date, Year]
-        ═══════════════════════════
+    // Generate embeddings for the chunks
+    const { embeddings } = (await embed(textChunks, {
+      provider: "OPEN_AI",
+      model: "text-embedding-ada-002",
+      maxRetries: 3,
+    })) as EmbedManyResult<string>;
 
-        🌡️ WEATHER SUMMARY
-        • Conditions: [brief description]
-        • Temperature: [X°C/Y°F to A°C/B°F]
-        • Precipitation: [X% chance]
-
-        🌅 MORNING ACTIVITIES
-        Outdoor:
-        • [Activity Name] - [Brief description including specific location/route]
-          Best timing: [specific time range]
-          Note: [relevant weather consideration]
-
-        🌞 AFTERNOON ACTIVITIES
-        Outdoor:
-        • [Activity Name] - [Brief description including specific location/route]
-          Best timing: [specific time range]
-          Note: [relevant weather consideration]
-
-        🏠 INDOOR ALTERNATIVES
-        • [Activity Name] - [Brief description including specific venue]
-          Ideal for: [weather condition that would trigger this alternative]
-
-        ⚠️ SPECIAL CONSIDERATIONS
-        • [Any relevant weather warnings, UV index, wind conditions, etc.]
-
-        Guidelines:
-        - Suggest 2-3 time-specific outdoor activities per day
-        - Include 1-2 indoor backup options
-        - For precipitation >50%, lead with indoor activities
-        - All activities must be specific to the location
-        - Include specific venues, trails, or locations
-        - Consider activity intensity based on temperature
-        - Keep descriptions concise but informative
-
-        Maintain this exact formatting for consistency, using the emoji and section headers as shown.`,
+    // Prepare metadata for each chunk
+    const chunksWithMetadata = validChunks.map((chunk: any, index: number) => ({
+      text: chunk.text,
+      metadata: {
+        ...metadata,
+        chunk_index: index,
+        heading: chunk.metadata?.heading,
+        parent_tag: chunk.metadata?.parentTag,
       },
-      {
-        role: 'user',
-        content: prompt,
-      },
-    ]);
-
-    for await (const chunk of response.textStream) {
-      process.stdout.write(chunk);
-    }
-
+    }));
     return {
-      activities: response.text,
+      embeddings,
+      chunks: chunksWithMetadata,
     };
   },
 });
 
-function getWeatherCondition(code: number): string {
-  const conditions: Record<number, string> = {
-    0: 'Clear sky',
-    1: 'Mainly clear',
-    2: 'Partly cloudy',
-    3: 'Overcast',
-    45: 'Foggy',
-    48: 'Depositing rime fog',
-    51: 'Light drizzle',
-    53: 'Moderate drizzle',
-    55: 'Dense drizzle',
-    61: 'Slight rain',
-    63: 'Moderate rain',
-    65: 'Heavy rain',
-    71: 'Slight snow fall',
-    73: 'Moderate snow fall',
-    75: 'Heavy snow fall',
-    95: 'Thunderstorm',
-  };
-  return conditions[code] || 'Unknown';
-}
+const upsertStep = new Step({
+  id: "upsert-embeddings",
+  execute: async ({ context, mastra }) => {
+    if (
+      context.machineContext?.stepResults?.["embed-content"]?.status !==
+      "success"
+    ) {
+      throw new Error("Fetch embed step failed");
+    }
 
-const weatherWorkflow = new Workflow({
-  name: 'weather-workflow',
-  triggerSchema: z.object({
-    city: z.string().describe('The city to get the weather for'),
-  }),
-})
-  .step(fetchWeather)
-  .then(planActivities);
+    const vector = mastra?.vectors?.pgVector;
 
-weatherWorkflow.commit();
+    if (!vector) {
+      throw new Error("Vector store not found");
+    }
 
-export { weatherWorkflow };
+    const { embeddings, chunks } =
+      context.machineContext?.stepResults?.["embed-content"]?.payload;
+
+    // Create index if it doesn't exist (1536 is OpenAI's embedding dimension)
+    await vector.createIndex("content_embeddings", 1536).catch((e) => {
+      // Index might already exist, that's fine
+      console.error("Error creating index:", e);
+    });
+
+    console.log("Upserting embeddings with metadata");
+    try {
+      // Debug logs
+      console.log("=== DEBUG UPSERT ===");
+      console.log("Embeddings format:", {
+        length: embeddings.length,
+        sampleDimensions: embeddings[0]?.length,
+        sampleFirst: embeddings[0]?.slice(0, 5),
+      });
+      console.log("Metadata format:", {
+        length: chunks.length,
+        sample: chunks[0],
+      });
+
+      const result = await vector.upsert(
+        "content_embeddings",
+        embeddings,
+        chunks
+      );
+      console.log("=== POST UPSERT CHECK ===");
+      console.log("Upsert result:", result);
+
+      // Verify the data actually made it
+      const count = await vector.describeIndex(`content_embeddings`);
+      console.log("Row count:", count);
+    } catch (e) {
+      console.error("Error upserting embeddings:", e);
+      throw e; // rethrow to maintain error handling
+    }
+
+    return {
+      success: true,
+      chunks_count: chunks.length,
+      embeddings_count: embeddings.length,
+    };
+  },
+});
+
+contentPipeline
+  .step(fetchContentStep)
+  .then(embedStep)
+  .then(upsertStep)
+  .commit();
+
+export { contentPipeline };
