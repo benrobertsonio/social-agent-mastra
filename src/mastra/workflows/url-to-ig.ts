@@ -139,21 +139,33 @@ const generatePostStep = new Step({
 
     const llm = mastra.llm({
       provider: "ANTHROPIC",
-      name: "claude-3-5-sonnet-20240620",
+      name: "claude-3-5-haiku-20241022",
     });
-
-    const response = await llm.generate(
-      buildPrompt(
-        pageContentResult.payload.chunks,
-        describeImagesResult.payload.images
-      )
+    const prompt = buildPrompt(
+      pageContentResult.payload.chunks,
+      describeImagesResult.payload.images
     );
 
-    const text = response.text;
+    console.log({
+      chunks: pageContentResult.payload.chunks,
+    });
 
-    console.log({ text });
+    console.log({ prompt });
 
-    return text;
+    const postSchema = z.object({
+      post: z.object({
+        caption: z.string(),
+        hashtags: z.array(z.string()),
+        images: z.array(z.string()),
+        firstComment: z.string(),
+      }),
+    });
+
+    const response = await llm.generate(prompt, {
+      output: postSchema,
+    });
+
+    return response.object;
   },
 });
 

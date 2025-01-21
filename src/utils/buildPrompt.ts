@@ -1,5 +1,5 @@
 export default function buildPrompt(
-  content: string,
+  content: { text: string; url: string }[],
   images: { url: string; description: string }[]
 ) {
   return `
@@ -8,13 +8,13 @@ export default function buildPrompt(
 First, review the following web content:
 
 <web_content>
-${content}
+${content.map((chunk) => `<web_content>${chunk.text}</web_content>`).join("\n")}
 </web_content>
 
 Now, consider the descriptions of the images associated with this content:
 
 <image_descriptions>
-${images.map((image) => `<image_description>${image.description}</image_description>`).join("\n")}
+${images.map((image) => `<image_url>${image.url}</image_url><image_description>${image.description}</image_description>`).join("\n")}
 </image_descriptions>
 
 Your goal is to create an Instagram post that captures the essence of the content while being visually appealing and shareable. Follow these steps to create an effective post:
@@ -26,7 +26,7 @@ Your goal is to create an Instagram post that captures the essence of the conten
 
 2. Craft a caption:
    - Write a brief, attention-grabbing first sentence that introduces the topic
-     (Note: Avoid using phrases like "delve," "unleash," "dive into", or "welcome")
+     (Note: Avoid using phrases like "delve," "unleash," "dive into", "discover",or "welcome")
    - Summarize the main point or most interesting aspect of the content in 2-3 sentences
    - If applicable, include a relevant quote from the content
    - End with a call-to-action or question to encourage engagement
@@ -66,9 +66,9 @@ Then, present your Instagram post using the following structure:
 </first_comment
 
 
-<image_suggestion>
-[the image urls you recommend]
-</image_suggestion>
+<images_suggestion>
+[the urls of the images to be used for the post]
+</images_suggestion>
 </instagram_post>
 
 Remember to keep the tone conversational and engaging, as if you're speaking directly to the audience. Avoid using jargon unless it's appropriate for the target audience. Your goal is to create a post that will resonate with Instagram users and encourage them to interact with the content.
