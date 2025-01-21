@@ -141,6 +141,8 @@ const upsertStep = new Step({
     });
 
     console.log("Upserting embeddings with metadata");
+    let result: string[];
+
     try {
       // Debug logs
       console.log("=== DEBUG UPSERT ===");
@@ -154,11 +156,8 @@ const upsertStep = new Step({
         sample: chunks[0],
       });
 
-      const result = await vector.upsert(
-        "content_embeddings",
-        embeddings,
-        chunks
-      );
+      result = await vector.upsert("content_embeddings", embeddings, chunks);
+
       console.log("=== POST UPSERT CHECK ===");
       console.log("Upsert result:", result);
 
@@ -174,6 +173,7 @@ const upsertStep = new Step({
       success: true,
       chunks_count: chunks.length,
       embeddings_count: embeddings.length,
+      vector_ids: result,
     };
   },
 });
