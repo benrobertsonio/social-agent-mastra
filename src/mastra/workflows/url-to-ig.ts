@@ -14,11 +14,6 @@ const createInstagramPostWorkflow = new Workflow({
   }),
 });
 
-const contentSchema = z.object({
-  chunks: z.array(z.any()),
-  imageUrls: z.array(z.string()),
-});
-
 // describe images
 const describeImagesStep = new Step({
   id: "describe-images",
@@ -139,7 +134,7 @@ const generatePostStep = new Step({
 
     const llm = mastra.llm({
       provider: "ANTHROPIC",
-      name: "claude-3-5-haiku-20241022",
+      name: "claude-3-5-sonnet-20240620",
     });
     const prompt = buildPrompt(
       pageContentResult.payload.chunks,

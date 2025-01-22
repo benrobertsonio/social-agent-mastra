@@ -101,12 +101,10 @@ const embedStep = new Step({
     // Prepare metadata for each chunk
     const chunksWithMetadata = validChunks.map((chunk: any, index: number) => ({
       text: chunk.text,
-      metadata: {
-        ...metadata,
-        chunk_index: index,
-        heading: chunk.metadata?.heading,
-        parent_tag: chunk.metadata?.parentTag,
-      },
+      ...metadata,
+      chunk_index: index,
+      heading: chunk.metadata?.heading,
+      parent_tag: chunk.metadata?.parentTag,
     }));
     return {
       embeddings,
