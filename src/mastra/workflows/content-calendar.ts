@@ -1,3 +1,4 @@
+import { PgVector, embed } from "@mastra/rag";
 import { Step, Workflow } from "@mastra/core";
 
 import contentCalendarPrompt from "../../utils/contentCalendarPrompt";
@@ -72,12 +73,33 @@ const createInstagramPostsStep = new Step({
     const stepContext =
       context.machineContext?.stepResults?.["create-content-calendar"];
 
-    console.log("Step context:", stepContext);
+    console.log("Step context:", context);
 
     const content = stepContext?.payload?.content;
 
     for (const item of content) {
-      console.log("Creating Instagram post for:", item);
+      console.log(
+        "Creating Instagram post for:",
+        item,
+        "with search terms:",
+        item.searchTerms
+      );
+
+      // Convert query to embedding - join search terms into a single string
+      const { embedding } = await embed(item.searchTerms.join(" "), {
+        provider: "OPEN_AI",
+        model: "text-embedding-3-small",
+        maxRetries: 3,
+      });
+
+      // Query vector store
+      const pgVector = new PgVector(process.env.POSTGRES_CONNECTION_STRING!);
+      const results = await pgVector.query("content_embeddings", embedding, 10);
+
+      // console.log({ results });
+      results.forEach((result) => {
+        console.log(result.metadata);
+      });
 
       // use item to do an embedding search to find the most relevant content
       // get the url of the content
@@ -86,6 +108,9 @@ const createInstagramPostsStep = new Step({
   },
 });
 
-createInstagramContentCalendar.step(createContentCalendarStep).commit();
+createInstagramContentCalendar
+  .step(createContentCalendarStep)
+  .then(createInstagramPostsStep)
+  .commit();
 
 export { createInstagramContentCalendar };

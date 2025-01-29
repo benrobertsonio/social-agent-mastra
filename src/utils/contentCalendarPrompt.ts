@@ -1,8 +1,9 @@
 export default function contentCalendarPrompt(
-  voice,
-  audience,
-  description,
-  dateRange
+  voice: string,
+  audience: string,
+  description: string,
+  dateRange: string,
+  postsPerDay: number
 ) {
   return `
     given the following info about a website, 
