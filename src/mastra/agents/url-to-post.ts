@@ -1,4 +1,4 @@
-import { Agent } from "@mastra/core";
+import { Agent } from "@mastra/core/agent";
 import { fetchUrlTool } from "../tools/fetch-url";
 
 // Create our RAG agent

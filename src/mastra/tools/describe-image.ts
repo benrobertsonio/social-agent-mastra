@@ -1,6 +1,5 @@
 import { Mastra, createTool } from "@mastra/core";
 
-import { MDocument } from "@mastra/rag";
 import { z } from "zod";
 
 const mastra = new Mastra();

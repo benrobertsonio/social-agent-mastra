@@ -1,6 +1,7 @@
-import { EmbedManyResult, Step, Workflow, embed } from "@mastra/core";
+import { EmbedManyResult, Step, embed } from "@mastra/core";
 
 import { MDocument } from "@mastra/rag";
+import { Workflow } from "@mastra/core/workflows";
 import { z } from "zod";
 
 const contentPipeline = new Workflow({

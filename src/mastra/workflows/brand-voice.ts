@@ -1,5 +1,5 @@
-import { Step, Workflow } from "@mastra/core";
-
+import { Step } from "@mastra/core";
+import { Workflow } from "@mastra/core/workflows";
 import { z } from "zod";
 
 const createBrandVoice = new Workflow({

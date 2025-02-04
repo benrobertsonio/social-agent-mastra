@@ -1,7 +1,8 @@
-import { Mastra, Step, Workflow } from "@mastra/core";
+import { Mastra, Step } from "@mastra/core";
 import { describeImage, describeImageTool } from "../tools/describe-image";
 
 import { MDocument } from "@mastra/rag";
+import { Workflow } from "@mastra/core/workflows";
 import buildPrompt from "../../utils/buildPrompt";
 import { fetchUrlTool } from "../tools/fetch-url";
 import { unescape } from "querystring";
