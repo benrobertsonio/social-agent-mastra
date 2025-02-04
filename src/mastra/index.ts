@@ -1,5 +1,5 @@
 import { Mastra } from "@mastra/core";
-import { PgVector } from "@mastra/rag";
+import { PgVector } from "@mastra/vector-pg";
 import { contentPipeline } from "./workflows";
 import { createBrandVoice } from "./workflows/brand-voice";
 import { createInstagramContentCalendar } from "./workflows/content-calendar";

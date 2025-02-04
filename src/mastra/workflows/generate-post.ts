@@ -1,6 +1,6 @@
 import { Step, Workflow } from "@mastra/core";
 
-import { PgVector } from "@mastra/rag";
+import { PgVector } from "@mastra/vector-pg";
 import { embed } from "@mastra/rag";
 // import contentCalendarPrompt from "../../utils/contentCalendarPrompt";
 import { z } from "zod";
