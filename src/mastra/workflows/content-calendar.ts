@@ -1,8 +1,9 @@
-import { PgVector, embed } from "@mastra/rag";
 import { Step, Workflow } from "@mastra/core";
 
+import { PgVector } from "@mastra/vector-pg";
 import contentCalendarPrompt from "../../utils/contentCalendarPrompt";
 import { createInstagramPostWorkflow } from "./url-to-ig";
+import { embed } from "@mastra/rag";
 import { z } from "zod";
 
 const createInstagramContentCalendar = new Workflow({
