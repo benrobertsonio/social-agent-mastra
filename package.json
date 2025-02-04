@@ -11,14 +11,14 @@
   "license": "ISC",
   "description": "",
   "dependencies": {
-    "@mastra/core": "^0.1.27-alpha.64",
-    "@mastra/rag": "^0.0.2-alpha.50",
+    "@mastra/core": "^0.2.0-alpha.83",
+    "@mastra/rag": "^0.0.2-alpha.75",
     "node-fetch": "^3.3.2",
     "zod": "^3.24.1"
   },
   "devDependencies": {
     "@types/node": "^22.10.7",
-    "mastra": "^0.1.57-alpha.93",
+    "mastra": "^0.1.57-alpha.133",
     "tsx": "^4.19.2",
     "typescript": "^5.7.3"
   }
