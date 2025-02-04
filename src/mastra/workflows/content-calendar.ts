@@ -45,11 +45,6 @@ const createContentCalendarStep = new Step({
       name: "claude-3-5-haiku-20241022",
     });
 
-    // const llm = mastra.llm({
-    //   provider: "OPEN_AI",
-    //   name: "gpt-4o",
-    // });
-
     const calendarSchema = z.object({
       content: z.array(
         z.object({
