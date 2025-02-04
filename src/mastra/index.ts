@@ -1,5 +1,4 @@
 import { Mastra } from "@mastra/core";
-import { NetlifyDeployer } from "@mastra/deployer-netlify";
 import { PgVector } from "@mastra/vector-pg";
 import { contentPipeline } from "./workflows";
 import { createBrandVoice } from "./workflows/brand-voice";
@@ -22,7 +21,4 @@ export const mastra = new Mastra({
   },
   // tools: { fetchUrlTool },
   vectors: { pgVector } as any, // TODO: Fix type once @mastra/core and @mastra/rag are stable
-  deployer: new NetlifyDeployer({
-    projectName: "social-agent-mastra",
-  }),
 });
