@@ -19,6 +19,5 @@ export const mastra = new Mastra({
     createBrandVoice: createBrandVoice,
     generatePost: generatePost,
   },
-  // tools: { fetchUrlTool },
-  vectors: { pgVector } as any, // TODO: Fix type once @mastra/core and @mastra/rag are stable
+  vectors: { pgVector },
 });

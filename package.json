@@ -16,6 +16,7 @@
     "@mastra/rag": "^0.1.0-alpha.85",
     "@mastra/vector-pg": "^0.1.0-alpha.26",
     "node-fetch": "^3.3.2",
+    "pathe": "^1.1.2",
     "zod": "^3.24.1"
   },
   "devDependencies": {

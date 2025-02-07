@@ -1,7 +1,6 @@
-import { EmbedManyResult, Step, embed } from "@mastra/core";
-
-import { MDocument } from "@mastra/rag";
-import { Workflow } from "@mastra/core/workflows";
+import { type EmbedManyResult } from "@mastra/core";
+import { Step, Workflow } from "@mastra/core/workflows";
+import { MDocument, embedMany } from "@mastra/rag";
 import { z } from "zod";
 
 const contentPipeline = new Workflow({
@@ -93,7 +92,7 @@ const embedStep = new Step({
     // console.log("Text chunks:", textChunks);
 
     // Generate embeddings for the chunks
-    const { embeddings } = (await embed(textChunks, {
+    const { embeddings } = (await embedMany(textChunks, {
       provider: "OPEN_AI",
       model: "text-embedding-ada-002",
       maxRetries: 3,
@@ -107,6 +106,7 @@ const embedStep = new Step({
       heading: chunk.metadata?.heading,
       parent_tag: chunk.metadata?.parentTag,
     }));
+
     return {
       embeddings,
       chunks: chunksWithMetadata,

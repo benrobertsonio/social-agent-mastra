@@ -3,13 +3,19 @@ export default function buildPrompt(
   images: { url: string; description: string }[]
 ) {
   return `
- You are a social media content creator specializing in crafting engaging Instagram posts. Your task is to create a compelling post based on web content and image descriptions.
+You are an expert copywriter tasked with creating compelling Instagram captions based on the content of a given webpage. Your goal is to craft captions that are engaging, tell a great story, and avoid being cheesy or cliché. Here's the webpage content you'll be working with:
 
-First, review the following web content:
+Here is an example of a good instagram post:
 
-<web_content>
+<instagram_post>
+<caption>
+The real power of a coloring page? Time slows down. Thoughts settle. Stories emerge. Between these intricate patterns and swirling designs lies an invitation to pause, breathe, and create without judgment.
+</caption>
+</instagram_post>
+
+<webpage_content>
 ${content.map((chunk) => `<web_content>${chunk.text}</web_content>`).join("\n")}
-</web_content>
+</webpage_content>
 
 Now, consider the descriptions of the images associated with this content:
 

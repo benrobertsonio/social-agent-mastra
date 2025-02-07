@@ -1,8 +1,8 @@
-import { Mastra, Step } from "@mastra/core";
-import { describeImage, describeImageTool } from "../tools/describe-image";
+import { Step, Workflow } from "@mastra/core/workflows";
 
-import { Workflow } from "@mastra/core/workflows";
+import { Mastra } from "@mastra/core";
 import buildPrompt from "../../utils/buildPrompt";
+import { describeImage } from "../tools/describe-image";
 import { fetchUrlTool } from "../tools/fetch-url";
 import { unescape } from "querystring";
 import { z } from "zod";
@@ -11,7 +11,6 @@ const createInstagramPostWorkflow = new Workflow({
   name: "create-instagram-post",
   triggerSchema: z.object({
     url: z.string(),
-    
   }),
 });
 
